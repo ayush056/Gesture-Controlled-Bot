@@ -1,0 +1,85 @@
+#include <VirtualWire.h>
+
+const int xpin = A3;                  // x-axis of the accelerometer
+const int ypin = A2;                  // y-axis
+const int zpin = A1;                  // z-axis (only on 3-axis models)
+int maxx = 0 ;                          //callibration constant
+int minx = 1000 ;
+int range ;
+
+float xData, yData;
+char xCharMsg[4], yCharMsg[4];
+
+void setup() {
+
+  pinMode(A4, OUTPUT);
+  pinMode(A0, OUTPUT);
+  digitalWrite(A4, HIGH);
+  digitalWrite(A0, LOW);
+ 
+ Serial.begin(9600);
+ 
+ // VirtualWire setup
+ vw_setup(2000);     // Bits per sec
+ 
+ for(;;){
+   Serial.print(analogRead(zpin));
+   Serial.print("\t");
+   Serial.print(maxx);
+   Serial.print("\t");
+   Serial.print(minx);
+   Serial.print("\t");
+   Serial.print(analogRead(xpin));
+   Serial.println();
+   if(analogRead(zpin)>420){
+     break;
+   }
+   
+   if(analogRead(xpin)<minx && analogRead(xpin)>250 && maxx>400){
+     minx=analogRead(xpin);
+   }
+   if(analogRead(xpin)>maxx){
+     maxx=analogRead(xpin);
+   }
+ }
+
+}
+
+void loop() {
+  
+  xData = analogRead(xpin);
+  yData = analogRead(ypin);
+  Serial.print(xData);
+  Serial.print("\t");
+  Serial.print(yData);
+  Serial.print("\t");
+
+range = maxx-minx ;
+Serial.print(range);
+Serial.print("\t");
+xData = (xData-minx)/range*200;
+yData = (yData-minx)/range*200+500;
+
+  Serial.print(xData);
+  Serial.print("\t");
+  Serial.print(yData);
+  Serial.print("\t");
+  Serial.println();
+
+  // Converting integer data to Char array directly
+  itoa(xData,xCharMsg,10);
+  itoa(yData,yCharMsg,10);
+  
+  if(yData<=550 || yData>=650){
+    send(yCharMsg);
+  }
+  if(yData>550 && yData<650){
+    send(xCharMsg);
+  }
+  
+}
+void send(char *message){
+  vw_send((uint8_t *)message, strlen(message));
+  vw_wait_tx(); // Waiting until the whole message is gone
+
+}
