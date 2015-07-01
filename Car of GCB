@@ -1,0 +1,204 @@
+#include <VirtualWire.h>
+
+#define echopinF 16
+#define trigpinF 17
+#define echopinB A1
+#define trigpinB A2
+#define echopinL 53
+#define trigpinL 51
+#define echopinR 37
+#define trigpinR 39
+int rfdata;
+char rfCharMsg[4];
+float distanceF, distanceB, distanceL, distanceR;
+
+void setup() {
+ // Serial.begin(9600);
+  
+  pinMode(8,OUTPUT);
+  pinMode(6,OUTPUT);
+  pinMode(9,OUTPUT);
+  pinMode(7,OUTPUT);
+  pinMode(20,OUTPUT);
+  pinMode(21,OUTPUT);
+  pinMode(A3,OUTPUT);
+  pinMode(A0,OUTPUT);
+  pinMode(49,OUTPUT);
+  pinMode(35,OUTPUT);
+  digitalWrite(35,LOW);
+  digitalWrite(49,HIGH);
+  digitalWrite(A3,HIGH);
+  digitalWrite(A0,LOW);
+  digitalWrite(20,LOW);
+  digitalWrite(21,LOW);
+  digitalWrite(8,LOW);
+  digitalWrite(9,LOW);
+  digitalWrite(6,LOW);
+  digitalWrite(7,LOW);
+  pinMode(echopinF,INPUT);
+  pinMode(trigpinF,OUTPUT);
+  pinMode(echopinB,INPUT);
+  pinMode(trigpinB,OUTPUT);
+  pinMode(echopinL,INPUT);
+  pinMode(trigpinL,OUTPUT);
+  pinMode(echopinR,INPUT);
+  pinMode(trigpinR,OUTPUT);
+    vw_set_ptt_inverted(true); 
+    vw_setup(2000); 
+    vw_rx_start();
+        
+
+}
+
+void loop(){
+  
+    digitalWrite(trigpinF,LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigpinF,HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigpinF,LOW);
+    distanceF=pulseIn(echopinF,HIGH);
+    digitalWrite(trigpinR,LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigpinR,HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigpinR,LOW);
+    distanceR=pulseIn(echopinR,HIGH);
+    digitalWrite(trigpinB,LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigpinB,HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigpinB,LOW);
+    distanceB=pulseIn(echopinB,HIGH);
+    digitalWrite(trigpinL,LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigpinL,HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigpinL,LOW);
+    distanceL=pulseIn(echopinL,HIGH);
+    distanceF/=58;    // The speed of sound is 340 m/s or 29 microseconds per centimeter.
+    distanceB/=58;
+    distanceL/=58;
+    distanceR/=58;
+    
+    uint8_t buf[VW_MAX_MESSAGE_LEN];
+    uint8_t buflen = VW_MAX_MESSAGE_LEN;
+ 
+    if(!vw_wait_rx_max(1000)){
+      digitalWrite(21,LOW);
+      digitalWrite(8,LOW);
+      digitalWrite(9,LOW);
+      delay(10);
+      digitalWrite(6,LOW);
+      digitalWrite(7,LOW);
+      }
+    
+    if (vw_get_message(buf, &buflen)) 
+    {
+    int i;
+     
+        for (i = 0; i < buflen; i++)
+    {              
+          rfCharMsg[i] = char(buf[i]);
+    }
+    
+        rfCharMsg[buflen] = '\0';
+        
+        rfdata = atoi(rfCharMsg);
+        
+       /* Serial.print(rfdata);
+        Serial.print("\t");
+        Serial.print(distanceF);
+        Serial.print("\t");
+        Serial.print(distanceB);
+        Serial.print("\t");
+        Serial.print(distanceL);
+        Serial.print("\t");
+        Serial.print(distanceR);
+        Serial.println();*/
+          
+          if(rfdata>=120 && rfdata<=180 && distanceB>15){
+             digitalWrite(21,LOW);
+             analogWrite(6,255);
+             analogWrite(7,255);
+             delay(10);
+             analogWrite(8,1.77*(rfdata)-169);
+             analogWrite(9,1.77*(rfdata)-169);
+            }
+            
+           else if(rfdata>180 && rfdata<250 && distanceB>15){
+              digitalWrite(21,LOW);
+              analogWrite(6,255);
+              analogWrite(7,255);
+              delay(10);
+              analogWrite(8,150);
+              analogWrite(9,150);
+            }
+            
+          else if(rfdata>=120 && rfdata<=250 && distanceB<=15){
+              digitalWrite(21,HIGH);
+              digitalWrite(8,LOW);
+              digitalWrite(9,LOW);
+            }
+          
+          else if(rfdata<=90 && rfdata>=30 && distanceF>15){
+               digitalWrite(21,LOW);
+               digitalWrite(6,LOW);
+               digitalWrite(7,LOW);
+               analogWrite(8,-1.77*(rfdata)+202);
+               analogWrite(9,-1.77*(rfdata)+202);
+            }           
+          
+          else if(rfdata<30 && rfdata>-20 && distanceF>15){
+               digitalWrite(21,LOW);
+               digitalWrite(6,LOW);
+               digitalWrite(7,LOW);
+               analogWrite(8,149);
+               analogWrite(9,149);
+            }
+            
+          else if(rfdata>-20 && rfdata<=90 && distanceF<=15){
+               digitalWrite(21,HIGH);
+               digitalWrite(8,LOW);
+               digitalWrite(9,LOW);
+            }
+          
+          else if(rfdata>=480 && rfdata<=550 && distanceL>15){
+               digitalWrite(21,LOW);
+               digitalWrite(6,LOW);
+               digitalWrite(7,LOW);
+               digitalWrite(8,LOW);
+               analogWrite(9,149);
+            }
+            
+          else if(rfdata>=480 && rfdata<=550 && distanceL<=15){
+               digitalWrite(21,HIGH);
+               digitalWrite(8,LOW);
+               digitalWrite(9,LOW);
+            }
+            
+          else if(rfdata>=650 && rfdata<=720 && distanceR>15){
+               digitalWrite(21,LOW);
+               digitalWrite(6,LOW);
+               digitalWrite(7,LOW);
+               analogWrite(8,149);
+               digitalWrite(9,LOW);
+            }
+          
+          else if(rfdata>=650 && rfdata<=720 && distanceR<=15){
+               digitalWrite(21,HIGH);
+               digitalWrite(8,LOW);
+               digitalWrite(9,LOW);
+            }
+          
+          else{
+               digitalWrite(21,LOW);
+               digitalWrite(8,LOW);
+               digitalWrite(9,LOW);
+               delay(10);
+               digitalWrite(6,LOW);
+               digitalWrite(7,LOW);
+              
+           }
+    }
+}
